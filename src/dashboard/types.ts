@@ -1,4 +1,5 @@
 export type PatientStatus = "Active" | "Monitoring" | "Recovered";
+export type BookingStatus = "Pending" | "Confirmed" | "Admitted" | "Completed" | "Cancelled";
 
 export type Doctor = {
   id: string;
@@ -12,6 +13,8 @@ export type Doctor = {
 
 export type Patient = {
   id: string;
+  bookingId?: string;
+  bookingStatus?: BookingStatus;
   doctorId: string;
   name: string;
   age: number;
@@ -19,11 +22,13 @@ export type Patient = {
   phone: string;
   condition: string;
   status: PatientStatus;
-  admittedAt: string;
+  admittedAt?: string;
   updatedAt: string;
   appointmentAt?: string;
   visitCompletedAt?: string;
 };
 
 export type DoctorInput = Omit<Doctor, "id" | "createdAt">;
-export type PatientInput = Omit<Patient, "id" | "updatedAt">;
+export type PatientInput = Omit<Patient, "id" | "bookingId" | "bookingStatus" | "updatedAt"> & {
+  appointmentAt: string;
+};

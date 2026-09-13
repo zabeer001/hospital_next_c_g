@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { hospitalApi, type DashboardSummary } from "./api";
+import { ApiRequestError } from "@/auth/client";
 import type { Doctor, DoctorInput, Patient, PatientInput } from "./types";
 
 type DashboardContextValue = {
@@ -79,8 +80,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       doctors, patients, summary, loading, error, pending: pendingCount > 0, refresh,
       addDoctor: (input) => run(async () => { const doctor = await hospitalApi.createDoctor(input); setDoctors((items) => [doctor, ...items]); notify("Doctor added successfully"); }),
       addPatient: (input) => run(async () => { const patient = await hospitalApi.createPatient(input); setPatients((items) => [patient, ...items]); notify("Patient added successfully"); }),
-      updatePatient: (id, input) => run(async () => { const patient = await hospitalApi.updatePatient(id, input); setPatients((items) => items.map((item) => item.id === id ? patient : item)); notify("Patient details updated"); }),
-      completeVisit: (id) => run(async () => { const patient = await hospitalApi.completePatientVisit(id); setPatients((items) => items.map((item) => item.id === id ? patient : item)); notify("Visit completed and removed from the upcoming queue"); }),
+      updatePatient: (id, input) => run(async () => { try { const patient = await hospitalApi.updatePatient(id, input); setPatients((items) => items.map((item) => item.id === id ? patient : item)); notify("Patient details updated"); } catch (error) { if (error instanceof ApiRequestError && error.status === 409) throw new Error("This patient has no booking to update. Create a booking before changing appointment details."); throw error; } }),
+      completeVisit: (id) => run(async () => { try { const patient = await hospitalApi.completePatientVisit(id); setPatients((items) => items.map((item) => item.id === id ? patient : item)); notify("Visit completed and removed from the upcoming queue"); } catch (error) { if (error instanceof ApiRequestError && error.status === 409) throw new Error("This patient has no active booking to complete."); throw error; } }),
       deletePatient: (id) => run(async () => { await hospitalApi.deletePatient(id); setPatients((items) => items.filter((item) => item.id !== id)); notify("Patient removed"); }),
       doctorName: (id) => doctors.find((doctor) => doctor.id === id)?.name || "Unassigned",
       notify,

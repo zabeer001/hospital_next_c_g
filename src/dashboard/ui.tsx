@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import type { PatientStatus } from "./types";
+import type { BookingStatus, PatientStatus } from "./types";
 
 export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
   const initials = name.replace(/^Dr\.\s*/, "").split(" ").slice(0, 2).map((part) => part[0]).join("");
@@ -12,6 +12,12 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
 export function StatusBadge({ status }: { status: PatientStatus }) {
   const styles: Record<PatientStatus, string> = { Active: "badge-error", Monitoring: "badge-warning", Recovered: "badge-success" };
   return <span className={`badge badge-sm gap-1.5 font-semibold ${styles[status]}`}><span className="size-1.5 rounded-full bg-current" />{status}</span>;
+}
+
+export function BookingStatusBadge({ status }: { status?: BookingStatus }) {
+  if (!status) return <span className="text-xs text-base-content/45">No booking</span>;
+  const styles: Record<BookingStatus, string> = { Pending: "badge-warning", Confirmed: "badge-info", Admitted: "badge-primary", Completed: "badge-success", Cancelled: "badge-error" };
+  return <span className={`badge badge-outline badge-sm font-semibold ${styles[status]}`}>{status}</span>;
 }
 
 export function Pagination({ page, pages, onChange }: { page: number; pages: number; onChange(page: number): void }) {

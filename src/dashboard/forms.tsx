@@ -102,8 +102,8 @@ export function PatientForm({
       phone: String(data.get("phone")),
       condition: String(data.get("condition")),
       status: String(data.get("status")) as PatientStatus,
-      admittedAt: String(data.get("admittedAt")),
-      appointmentAt: String(data.get("appointmentAt")),
+      admittedAt: optionalIsoDate(String(data.get("admittedAt"))),
+      appointmentAt: new Date(String(data.get("appointmentAt"))).toISOString(),
       visitCompletedAt: initial?.visitCompletedAt,
     });
     setSubmitting(false);
@@ -170,21 +170,31 @@ export function PatientForm({
           label="Admission date"
           type="date"
           defaultValue={
-            initial?.admittedAt || new Date().toISOString().slice(0, 10)
+            initial?.admittedAt ? initial.admittedAt.slice(0, 10) : undefined
           }
-          required
         />
         <Field
           name="appointmentAt"
           label="Booked visit"
           type="datetime-local"
-          defaultValue={initial?.appointmentAt}
+          defaultValue={toLocalDateTimeInput(initial?.appointmentAt)}
           required
         />
       </div>
       <FormActions onCancel={onCancel} label={label} submitting={submitting} />
     </form>
   );
+}
+
+function optionalIsoDate(value: string) {
+  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
+}
+
+function toLocalDateTimeInput(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
 function Field({

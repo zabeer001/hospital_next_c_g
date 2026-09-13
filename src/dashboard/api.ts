@@ -9,8 +9,9 @@ type DoctorRecord = Omit<Doctor, "id" | "hospital" | "phone" | "email"> & {
   id: number; hospital: string | null; phone: string | null; email: string | null;
   patientCount?: number; upcomingCount?: number;
 };
-type PatientRecord = Omit<Patient, "id" | "doctorId" | "phone" | "condition" | "appointmentAt" | "visitCompletedAt"> & {
-  id: number; doctorId: number; phone: string | null; condition: string | null;
+type PatientRecord = Omit<Patient, "id" | "bookingId" | "doctorId" | "phone" | "condition" | "appointmentAt" | "admittedAt" | "visitCompletedAt"> & {
+  id: number; bookingId?: number | null; doctorId: number; phone: string | null; condition: string | null;
+  admittedAt?: string | null;
   appointmentAt?: string | null; visitCompletedAt?: string | null;
   doctorName?: string; doctorSpecialization?: string;
 };
@@ -36,13 +37,14 @@ function mapDoctor(record: DoctorRecord): Doctor {
   return { ...record, id: String(record.id), hospital: record.hospital || "", phone: record.phone || "", email: record.email || "" };
 }
 function mapPatient(record: PatientRecord): Patient {
-  return { ...record, id: String(record.id), doctorId: String(record.doctorId), phone: record.phone || "", condition: record.condition || "", appointmentAt: record.appointmentAt || undefined, visitCompletedAt: record.visitCompletedAt || undefined };
+  return { ...record, id: String(record.id), bookingId: record.bookingId == null ? undefined : String(record.bookingId), doctorId: String(record.doctorId), phone: record.phone || "", condition: record.condition || "", appointmentAt: record.appointmentAt || undefined, admittedAt: record.admittedAt || undefined, visitCompletedAt: record.visitCompletedAt || undefined };
 }
 function patientBody(input: Partial<PatientInput>) {
   return {
     ...input,
     ...(input.doctorId !== undefined && { doctorId: Number(input.doctorId) }),
     ...(input.appointmentAt !== undefined && { appointmentAt: input.appointmentAt || null }),
+    ...(input.admittedAt !== undefined && { admittedAt: input.admittedAt || null }),
     ...(input.visitCompletedAt !== undefined && { visitCompletedAt: input.visitCompletedAt || null }),
   };
 }
