@@ -16,21 +16,16 @@ set +a
 : "${VPS_PASSWORD:?Missing VPS_PASSWORD in .env}"
 : "${VPS_PROJECT_DIR:?Missing VPS_PROJECT_DIR in .env}"
 : "${VPS_APP_CONTAINER:?Missing VPS_APP_CONTAINER in .env}"
-: "${NEXT_PUBLIC_SITE_URL:?Missing NEXT_PUBLIC_SITE_URL in .env}"
-: "${NEXT_PUBLIC_APP_LOGIN_URL:?Missing NEXT_PUBLIC_APP_LOGIN_URL in .env}"
-: "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL in .env}"
 
-# Copy local .env values into encrypted GitHub Actions repository secrets.
+# Only connection details belong in GitHub Actions secrets. Frontend build
+# values are read from the production .env when Docker builds on the VPS.
 printf '%s' "$VPS_ROOT_ACCESS" | gh secret set VPS_ROOT_ACCESS
 printf '%s' "$VPS_PASSWORD" | gh secret set VPS_PASSWORD
 printf '%s' "$VPS_PROJECT_DIR" | gh secret set VPS_PROJECT_DIR
 printf '%s' "$VPS_APP_CONTAINER" | gh secret set VPS_APP_CONTAINER
-printf '%s' "$NEXT_PUBLIC_SITE_URL" | gh secret set NEXT_PUBLIC_SITE_URL
-printf '%s' "$NEXT_PUBLIC_APP_LOGIN_URL" | gh secret set NEXT_PUBLIC_APP_LOGIN_URL
-printf '%s' "$NEXT_PUBLIC_API_URL" | gh secret set NEXT_PUBLIC_API_URL
 
 # Commit and push the pipeline. Pushing main starts deployment automatically.
-git add .github/workflows/deploy.yml docker-compose.yml README.md cicd/commands
+git add .github/workflows/deploy.yml Dockerfile docker-compose.yml README.md bash/git_bash.sh cicd/commands cicd/commands_
 git commit -m "Add frontend CI/CD deployment"
 git push origin main
 

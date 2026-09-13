@@ -47,27 +47,13 @@ case "${1:-}" in
       exit 1
     fi
 
-    if ! command -v gh >/dev/null 2>&1; then
-      echo "GitHub CLI (gh) is required to sync production build secrets." >&2
-      exit 1
-    fi
-
-    gh auth status
-
-    set -a
-    source .env
-    set +a
-
-    : "${NEXT_PUBLIC_SITE_URL:?Missing NEXT_PUBLIC_SITE_URL in .env}"
-    : "${NEXT_PUBLIC_APP_LOGIN_URL:?Missing NEXT_PUBLIC_APP_LOGIN_URL in .env}"
-    : "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL in .env}"
-
-    printf '%s' "$NEXT_PUBLIC_SITE_URL" | gh secret set NEXT_PUBLIC_SITE_URL
-    printf '%s' "$NEXT_PUBLIC_APP_LOGIN_URL" | gh secret set NEXT_PUBLIC_APP_LOGIN_URL
-    printf '%s' "$NEXT_PUBLIC_API_URL" | gh secret set NEXT_PUBLIC_API_URL
-
     git push origin main
-    gh run watch --exit-status
+
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+      gh run watch --exit-status
+    else
+      echo "Push completed and CI/CD was triggered. Check GitHub Actions for its status."
+    fi
     ;;
 
   *)

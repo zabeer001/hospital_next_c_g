@@ -135,11 +135,11 @@ docker compose down
 
 ## CI/CD
 
-Pushes to `main` run type-checking and linting, build the application artifact in
-GitHub Actions, and deploy it to the VPS. Deployment does not build a Docker
-image: the compiled `dist` directory is copied to the server and mounted into the
-existing `doctor-tracker-frontend:latest` image before the service is recreated
-with `docker compose up --no-build`.
+Pushes to `main` connect to the VPS, pull the latest source, build the Docker
+image, and recreate the frontend service. Docker Compose reads the production
+`.env` on the VPS and passes the `NEXT_PUBLIC_*` values into the image build.
+Those values are therefore compiled into the frontend without storing them in
+GitHub Actions secrets.
 
 Configure these GitHub Actions repository secrets:
 
@@ -147,10 +147,17 @@ Configure these GitHub Actions repository secrets:
 - `VPS_PASSWORD`
 - `VPS_PROJECT_DIR`
 - `VPS_APP_CONTAINER`
-- `NEXT_PUBLIC_SITE_URL`
-- `NEXT_PUBLIC_APP_LOGIN_URL`
 
-The VPS must already contain the project checkout and the
-`doctor-tracker-frontend:latest` image. The workflow can also be started manually
-from the repository's **Actions** tab.
+The VPS project directory must contain a production `.env` with `PORT`,
+`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_LOGIN_URL`, and
+`NEXT_PUBLIC_API_URL`. The workflow rejects a missing API URL or one containing
+`localhost`. It can also be started manually from the repository's **Actions**
+tab.
+
+Use the deployment helper from the project root:
+
+```bash
+./bash/git_bash.sh local "your commit message"
+./bash/git_bash.sh production
+```
 # hospital_next_c_g
