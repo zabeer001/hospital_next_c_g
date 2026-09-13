@@ -30,12 +30,12 @@ export default function BookingsPage() {
   const [editing, setEditing] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState<Booking | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError("");
     try { setBookings(await hospitalApi.getBookings()); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Bookings could not be loaded"); }
-    finally { setLoading(false); }
+    finally { if (showLoading) setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -130,7 +130,14 @@ export default function BookingsPage() {
       <div className="p-5 sm:p-6"><BookingForm booking={editing || undefined} patients={patients} doctors={doctors} pending={pending} canCreatePatient={can("patients.create")} canCreateDoctor={can("doctors.create")} onCreatePatient={() => setCreatingPatient(true)} onCreateDoctor={() => setCreatingDoctor(true)} onCancel={() => { setCreating(false); setEditing(null); }} onSubmit={async (input) => { const saved = await save(input, editing?.id); if (saved) { setCreating(false); setEditing(null); } }} /></div>
     </Overlay>
     <Overlay open={creatingPatient} onClose={() => setCreatingPatient(false)} title="Add a new patient" description="Create the patient, then select them in the booking form.">
-      <PatientForm doctors={doctors} onCancel={() => setCreatingPatient(false)} onSubmit={async (input) => { const saved = await addPatient(input); if (saved) setCreatingPatient(false); return saved; }} />
+      <PatientForm doctors={doctors} onCancel={() => setCreatingPatient(false)} onSubmit={async (input) => {
+        const saved = await addPatient(input);
+        if (saved) {
+          await load(false);
+          setCreatingPatient(false);
+        }
+        return saved;
+      }} />
     </Overlay>
     <Overlay open={creatingDoctor} onClose={() => setCreatingDoctor(false)} title="Add a new doctor" description="Create the clinician, then select them in the booking form.">
       <DoctorForm onCancel={() => setCreatingDoctor(false)} onSubmit={async (input) => { const saved = await addDoctor(input); if (saved) setCreatingDoctor(false); return saved; }} />
