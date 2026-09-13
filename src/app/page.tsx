@@ -25,7 +25,7 @@ export default function Home() {
         <div className="site-shell grid gap-14 pb-24 pt-16 lg:grid-cols-[1.03fr_.97fr] lg:items-center lg:pb-32 lg:pt-24">
           <div className="relative z-10">
             <p className="eyebrow">Healthcare, clearly connected</p>
-            <h1 className="display-title mt-7 max-w-3xl">Better care starts with a clearer picture.</h1>
+            <h1 className="display-title mt-7 max-w-3xl">Better cares starts with a clearer picture.</h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-muted sm:text-xl">Doctor Tracker brings clinical teams, patient relationships, and meaningful insights into one calm, organized workspace.</p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <a href={portalUrl} className="button button-coral">Open your portal <span aria-hidden="true">→</span></a>
