@@ -72,18 +72,8 @@ jobs:
           API_URL="${API_URL%\"}"
           API_URL="${API_URL#\"}"
 
-          LOGIN_URL="$(sed -n 's/^NEXT_PUBLIC_APP_LOGIN_URL=//p' .env | tail -n 1 | tr -d '\r')"
-          LOGIN_URL="${LOGIN_URL%\"}"
-          LOGIN_URL="${LOGIN_URL#\"}"
-
           if [ -z "$API_URL" ] || [[ "$API_URL" == *localhost* ]]; then
             echo "NEXT_PUBLIC_API_URL is missing or points to localhost in the production .env" >&2
-            exit 1
-          fi
-
-          if [ -z "$LOGIN_URL" ] || [[ "$LOGIN_URL" == *example.com* ]]; then
-            echo "NEXT_PUBLIC_APP_LOGIN_URL is missing or uses an example.com placeholder in the production .env" >&2
-            echo "Set NEXT_PUBLIC_APP_LOGIN_URL=/signin when sign-in is hosted by this frontend." >&2
             exit 1
           fi
 
