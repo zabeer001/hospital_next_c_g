@@ -47,47 +47,27 @@ case "${1:-}" in
       exit 1
     fi
 
-    if ! command -v gh >/dev/null 2>&1; then
-      echo "GitHub CLI (gh) is required to configure and monitor deployment." >&2
-      exit 1
-    fi
-
-    gh auth status
-
-    set -a
-    source .env
-    set +a
-
-    : "${VPS_ROOT_ACCESS:?Missing VPS_ROOT_ACCESS in .env}"
-    : "${VPS_PASSWORD:?Missing VPS_PASSWORD in .env}"
-    : "${VPS_PROJECT_DIR:?Missing VPS_PROJECT_DIR in .env}"
-    : "${VPS_APP_CONTAINER:?Missing VPS_APP_CONTAINER in .env}"
-
-    # GitHub needs only the VPS connection details. NEXT_PUBLIC_* values stay
-    # in the production VPS .env and are consumed by Docker Compose there.
-    printf '%s' "$VPS_ROOT_ACCESS" | gh secret set VPS_ROOT_ACCESS
-    printf '%s' "$VPS_PASSWORD" | gh secret set VPS_PASSWORD
-    printf '%s' "$VPS_PROJECT_DIR" | gh secret set VPS_PROJECT_DIR
-    printf '%s' "$VPS_APP_CONTAINER" | gh secret set VPS_APP_CONTAINER
-
     HEAD_SHA="$(git rev-parse HEAD)"
     git push origin main
 
-    RUN_ID=""
-    for attempt in $(seq 1 15); do
-      RUN_ID="$(gh run list --workflow deploy.yml --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId')"
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+      RUN_ID=""
+      for attempt in $(seq 1 15); do
+        RUN_ID="$(gh run list --workflow deploy.yml --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId')"
+        if [ -n "$RUN_ID" ]; then
+          break
+        fi
+        sleep 2
+      done
+
       if [ -n "$RUN_ID" ]; then
-        break
+        gh run watch "$RUN_ID" --exit-status
+      else
+        echo "Push completed. Check GitHub Actions for deployment status."
       fi
-      sleep 2
-    done
-
-    if [ -z "$RUN_ID" ]; then
-      echo "CI/CD run was not found for commit $HEAD_SHA" >&2
-      exit 1
+    else
+      echo "Push completed. Check GitHub Actions for deployment status."
     fi
-
-    gh run watch "$RUN_ID" --exit-status
     ;;
 
   *)
