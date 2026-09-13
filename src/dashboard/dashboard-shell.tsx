@@ -11,6 +11,7 @@ const navigation = [
   { href: "/dashboard", label: "Overview", icon: "⌂", permission: "dashboard.view" },
   { href: "/dashboard/doctors", label: "Doctors", icon: "+", permission: "doctors.index" },
   { href: "/dashboard/patients", label: "Patients", icon: "♙", permission: "patients.index" },
+  { href: "/dashboard/bookings", label: "Bookings", icon: "◷", permission: "bookings.index" },
   { href: "/dashboard/users", label: "Users", icon: "♟", permission: "users.manage" },
   { href: "/dashboard/roles", label: "Roles", icon: "⚿", permission: "roles.manage" },
 ];
@@ -19,6 +20,7 @@ const pageDetails: Record<string, { eyebrow: string; title: string }> = {
   "/dashboard": { eyebrow: "Wednesday, September 12", title: "Good morning, Samira" },
   "/dashboard/doctors": { eyebrow: "Care team directory", title: "Doctors" },
   "/dashboard/patients": { eyebrow: "Patient records", title: "Patients" },
+  "/dashboard/bookings": { eyebrow: "Appointment schedule", title: "Bookings" },
   "/dashboard/users": { eyebrow: "Access control", title: "Users" },
   "/dashboard/roles": { eyebrow: "Access control", title: "Roles" },
 };

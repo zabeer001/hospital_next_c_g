@@ -94,7 +94,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       {loading && <div className="fixed left-0 right-0 top-0 z-[140] h-1 overflow-hidden bg-primary/20"><div className="h-full w-1/2 animate-pulse bg-primary" /></div>}
       {children}
       {toast && (
-        <div className="toast toast-end z-[130]" role="status">
+        <div className="toast toast-end z-[1100]" role="status" aria-live="polite">
           <div className={`alert shadow-lg ${toast.kind === "error" ? "alert-error" : "alert-success"}`}>
             <span className="font-bold">{toast.kind === "error" ? "!" : "✓"}</span>
             <span>{toast.message}</span>

@@ -89,13 +89,19 @@ export function PatientForm({
   label?: string;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const [doctorId, setDoctorId] = useState(initial?.doctorId || defaultDoctorId || "");
+  const [doctorError, setDoctorError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
+    if (!doctorId) {
+      setDoctorError("Select an assigned doctor from the search results.");
+      return;
+    }
     const data = new FormData(event.currentTarget);
     setSubmitting(true);
     await onSubmit({
-      doctorId: String(data.get("doctorId")),
+      doctorId,
       name: String(data.get("name")),
       age: Number(data.get("age")),
       gender: String(data.get("gender")) as PatientInput["gender"],
@@ -150,14 +156,15 @@ export function PatientForm({
           defaultValue={initial?.condition}
           required
         />
-        <Select
-          name="doctorId"
+        <SearchableDoctorSelect
           label="Assigned doctor"
-          defaultValue={initial?.doctorId || defaultDoctorId || ""}
-          options={doctors.map((doctor) => ({
-            value: doctor.id,
-            label: `${doctor.name} · ${doctor.specialization}`,
-          }))}
+          value={doctorId}
+          doctors={doctors}
+          error={doctorError}
+          onChange={(value) => {
+            setDoctorId(value);
+            setDoctorError("");
+          }}
         />
         <Select
           name="status"
@@ -276,6 +283,98 @@ function Select({
         })}
       </select>
     </label>
+  );
+}
+
+function SearchableDoctorSelect({
+  label,
+  value,
+  doctors,
+  error,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  doctors: Doctor[];
+  error: string;
+  onChange(value: string): void;
+}) {
+  const selected = doctors.find((doctor) => doctor.id === value);
+  const [query, setQuery] = useState(selected?.name || "");
+  const [open, setOpen] = useState(false);
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = doctors.filter((doctor) =>
+    !normalizedQuery ||
+    `${doctor.name} ${doctor.specialization} ${doctor.hospital} ${doctor.phone} ${doctor.email}`
+      .toLowerCase()
+      .includes(normalizedQuery),
+  );
+  const inputId = "patient-assigned-doctor";
+
+  return (
+    <div
+      className="fieldset relative"
+      onFocusCapture={() => setOpen(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+          setQuery(selected?.name || "");
+        }
+      }}
+    >
+      <label className="fieldset-legend text-xs font-semibold" htmlFor={inputId}>
+        {label}<span className="text-error"> *</span>
+      </label>
+      <label className={`input input-bordered flex w-full items-center gap-2 bg-base-100 ${error ? "input-error" : ""}`}>
+        <span aria-hidden="true">⌕</span>
+        <input
+          id={inputId}
+          className="grow"
+          value={query}
+          placeholder="Search name, specialty, phone or email"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${inputId}-options`}
+          aria-invalid={Boolean(error)}
+          autoComplete="off"
+          onFocus={(event) => event.currentTarget.select()}
+          onClick={() => setOpen(true)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            onChange("");
+            setOpen(true);
+          }}
+        />
+        {selected && <span className="badge badge-success badge-sm">Selected</span>}
+      </label>
+      {error && <span className="mt-1 text-xs text-error" role="alert">{error}</span>}
+      {open && (
+        <div id={`${inputId}-options`} role="listbox" className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1 shadow-xl">
+          {matches.length ? matches.map((doctor) => (
+            <button
+              key={doctor.id}
+              type="button"
+              role="option"
+              aria-selected={doctor.id === value}
+              className={`flex w-full flex-col rounded-lg px-3 py-2 text-left hover:bg-base-200 ${doctor.id === value ? "bg-primary/10" : ""}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(doctor.id);
+                setQuery(doctor.name);
+                setOpen(false);
+              }}
+            >
+              <span className="font-semibold">{doctor.name}</span>
+              <span className="mt-0.5 text-xs text-base-content/55">
+                {[doctor.specialization, doctor.hospital, doctor.phone, doctor.email].filter(Boolean).join(" · ")}
+              </span>
+            </button>
+          )) : (
+            <p className="px-3 py-4 text-center text-sm text-base-content/55">No doctors match that search.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

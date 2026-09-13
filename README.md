@@ -45,6 +45,7 @@ Doctor Tracker combines a public healthcare product site with an authenticated o
 | `/dashboard` | Client-rendered analytics overview |
 | `/dashboard/doctors` | Searchable doctor directory and linked-patient management |
 | `/dashboard/patients` | Searchable and filterable patient management |
+| `/dashboard/bookings` | Appointment booking management |
 
 ## Source structure
 

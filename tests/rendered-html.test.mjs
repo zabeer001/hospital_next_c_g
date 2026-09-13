@@ -48,8 +48,8 @@ test("renders the local sign-in fallback", async () => {
   assert.match(html, /Email address/);
 });
 
-test("exposes the three client-rendered dashboard routes without an auth guard", async () => {
-  for (const path of ["/dashboard", "/dashboard/doctors", "/dashboard/patients"]) {
+test("exposes the client-rendered dashboard routes without an auth guard", async () => {
+  for (const path of ["/dashboard", "/dashboard/doctors", "/dashboard/patients", "/dashboard/bookings"]) {
     const response = await render(path);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /Doctor Tracker/);

@@ -19,6 +19,7 @@ export default function PatientsPage() {
     doctors,
     patients,
     doctorName,
+    addPatient,
     updatePatient,
     deletePatient,
     pending,
@@ -30,6 +31,7 @@ export default function PatientsPage() {
   const [doctor, setDoctor] = useState("All doctors");
   const [date, setDate] = useState("All time");
   const [page, setPage] = useState(1);
+  const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Patient | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
@@ -74,7 +76,12 @@ export default function PatientsPage() {
   return (
     <>
       <section className="card overflow-hidden border border-base-300 bg-base-100 shadow-sm">
-        <PatientsHeader patients={patients} doctors={doctors} />
+        <PatientsHeader
+          patients={patients}
+          doctors={doctors}
+          canCreate={can("patients.create")}
+          onCreate={() => setCreateOpen(true)}
+        />
         <PatientsFilters
           query={query}
           condition={condition}
@@ -105,6 +112,25 @@ export default function PatientsPage() {
         )}
       </section>
 
+      <Overlay
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Add a new patient"
+        description="Create a patient record and book their visit."
+        variant="drawer"
+      >
+        <div className="p-5 sm:p-6">
+          <PatientForm
+            doctors={doctors}
+            onCancel={() => setCreateOpen(false)}
+            onSubmit={async (input) => {
+              const saved = await addPatient(input);
+              if (saved) setCreateOpen(false);
+              return saved;
+            }}
+          />
+        </div>
+      </Overlay>
       <Overlay
         open={Boolean(editTarget)}
         onClose={() => setEditTarget(null)}

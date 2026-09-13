@@ -1,4 +1,4 @@
-import type { Doctor, DoctorInput, Patient, PatientInput, PatientStatus } from "./types";
+import type { Booking, BookingInput, Doctor, DoctorInput, Patient, PatientInput, PatientStatus } from "./types";
 import { authenticatedRequest } from "@/auth/client";
 
 export type PaginationMeta = { page: number; limit: number; total: number; totalPages: number };
@@ -14,6 +14,16 @@ type PatientRecord = Omit<Patient, "id" | "bookingId" | "doctorId" | "phone" | "
   admittedAt?: string | null;
   appointmentAt?: string | null; visitCompletedAt?: string | null;
   doctorName?: string; doctorSpecialization?: string;
+};
+type BookingRecord = Omit<Booking, "id" | "patientId" | "doctorId" | "condition" | "admittedAt" | "visitCompletedAt" | "patient" | "doctor"> & {
+  id: number;
+  patientId: number;
+  doctorId: number;
+  condition: string | null;
+  admittedAt: string | null;
+  visitCompletedAt: string | null;
+  patient: Omit<Booking["patient"], "id" | "phone"> & { id: number; phone: string | null };
+  doctor: Omit<Booking["doctor"], "id" | "hospital"> & { id: number; hospital: string | null };
 };
 
 export type DashboardSummary = {
@@ -38,6 +48,26 @@ function mapDoctor(record: DoctorRecord): Doctor {
 }
 function mapPatient(record: PatientRecord): Patient {
   return { ...record, id: String(record.id), bookingId: record.bookingId == null ? undefined : String(record.bookingId), doctorId: String(record.doctorId), phone: record.phone || "", condition: record.condition || "", appointmentAt: record.appointmentAt || undefined, admittedAt: record.admittedAt || undefined, visitCompletedAt: record.visitCompletedAt || undefined };
+}
+function mapBooking(record: BookingRecord): Booking {
+  return {
+    ...record,
+    id: String(record.id),
+    patientId: String(record.patientId),
+    doctorId: String(record.doctorId),
+    condition: record.condition || "",
+    admittedAt: record.admittedAt || undefined,
+    visitCompletedAt: record.visitCompletedAt || undefined,
+    patient: { ...record.patient, id: String(record.patient.id), phone: record.patient.phone || "" },
+    doctor: { ...record.doctor, id: String(record.doctor.id), hospital: record.doctor.hospital || "" },
+  };
+}
+function bookingBody(input: Partial<BookingInput>) {
+  return {
+    ...input,
+    ...(input.patientId !== undefined && { patientId: Number(input.patientId) }),
+    ...(input.doctorId !== undefined && { doctorId: Number(input.doctorId) }),
+  };
 }
 function patientBody(input: Partial<PatientInput>) {
   return {
@@ -69,6 +99,11 @@ export const hospitalApi = {
   updatePatient: async (id: string, input: Partial<PatientInput>) => mapPatient((await request<Envelope<PatientRecord>>(`/patients/${id}`, { method: "PATCH", body: JSON.stringify(patientBody(input)) })).data),
   completePatientVisit: async (id: string, completedAt = new Date().toISOString()) => mapPatient((await request<Envelope<PatientRecord>>(`/patients/${id}/complete-visit`, { method: "PATCH", body: JSON.stringify({ completedAt }) })).data),
   deletePatient: (id: string) => request<void>(`/patients/${id}`, { method: "DELETE" }),
+  getBookings: async () => (await getAll<BookingRecord>("/bookings")).map(mapBooking),
+  getBooking: async (id: string) => mapBooking((await request<Envelope<BookingRecord>>(`/bookings/${id}`)).data),
+  createBooking: async (input: BookingInput) => mapBooking((await request<Envelope<BookingRecord>>("/bookings", { method: "POST", body: JSON.stringify(bookingBody(input)) })).data),
+  updateBooking: async (id: string, input: Partial<BookingInput>) => mapBooking((await request<Envelope<BookingRecord>>(`/bookings/${id}`, { method: "PATCH", body: JSON.stringify(bookingBody(input)) })).data),
+  deleteBooking: (id: string) => request<void>(`/bookings/${id}`, { method: "DELETE" }),
   getDashboardSummary: async (): Promise<DashboardSummary> => {
     const summary = (await request<Envelope<DashboardSummaryRecord>>("/dashboard/summary")).data;
     return { ...summary, busiestDoctors: summary.busiestDoctors.map((doctor) => ({ ...doctor, id: String(doctor.id) })), recentPatients: summary.recentPatients.map(mapPatient) };
