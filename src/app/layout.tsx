@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppFrame } from "@/components/app-frame";
+import { portalUrl } from "@/config/public";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://doctor-tracker-public.dusky-koala-6177.chatgpt.site";
@@ -15,7 +16,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const portalUrl = process.env.NEXT_PUBLIC_APP_LOGIN_URL || "/dashboard";
   const organizationSchema = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Doctor Tracker", applicationCategory: "HealthApplication", description: "A clear, connected workspace for healthcare teams.", url: siteUrl };
   return (
     <html lang="en">

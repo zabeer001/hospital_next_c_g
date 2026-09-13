@@ -124,7 +124,7 @@ docker compose up --build
 The site will be available at [http://localhost:3000](http://localhost:3000). To use a different host port or external login URL:
 
 ```bash
-PORT=8080 NEXT_PUBLIC_APP_LOGIN_URL=https://portal.example.com/login docker compose up --build
+PORT=8080 NEXT_PUBLIC_APP_LOGIN_URL=/signin docker compose up --build
 ```
 
 Stop the container with:

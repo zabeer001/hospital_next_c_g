@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PortalCta } from "@/components/portal-cta";
+import { portalUrl } from "@/config/public";
 import { getFeaturedPosts } from "@/content/posts";
 
 const features = [
@@ -15,7 +16,6 @@ const steps = [
 ];
 
 export default function Home() {
-  const portalUrl = process.env.NEXT_PUBLIC_APP_LOGIN_URL || "/dashboard";
   const featuredPosts = getFeaturedPosts().slice(0, 2);
 
   return (
