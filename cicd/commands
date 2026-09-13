@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Run these commands from the project root.
+set -Eeuo pipefail
+
+# Authenticate GitHub CLI. This opens the interactive login only when needed.
+gh auth status || gh auth login -h github.com
+
+# Load deployment values without printing them.
+set -a
+source .env
+set +a
+
+# Stop before changing GitHub if any required value is missing.
+: "${VPS_ROOT_ACCESS:?Missing VPS_ROOT_ACCESS in .env}"
+: "${VPS_PASSWORD:?Missing VPS_PASSWORD in .env}"
+: "${VPS_PROJECT_DIR:?Missing VPS_PROJECT_DIR in .env}"
+: "${VPS_APP_CONTAINER:?Missing VPS_APP_CONTAINER in .env}"
+: "${NEXT_PUBLIC_SITE_URL:?Missing NEXT_PUBLIC_SITE_URL in .env}"
+: "${NEXT_PUBLIC_APP_LOGIN_URL:?Missing NEXT_PUBLIC_APP_LOGIN_URL in .env}"
+: "${NEXT_PUBLIC_API_URL:?Missing NEXT_PUBLIC_API_URL in .env}"
+
+# Copy local .env values into encrypted GitHub Actions repository secrets.
+printf '%s' "$VPS_ROOT_ACCESS" | gh secret set VPS_ROOT_ACCESS
+printf '%s' "$VPS_PASSWORD" | gh secret set VPS_PASSWORD
+printf '%s' "$VPS_PROJECT_DIR" | gh secret set VPS_PROJECT_DIR
+printf '%s' "$VPS_APP_CONTAINER" | gh secret set VPS_APP_CONTAINER
+printf '%s' "$NEXT_PUBLIC_SITE_URL" | gh secret set NEXT_PUBLIC_SITE_URL
+printf '%s' "$NEXT_PUBLIC_APP_LOGIN_URL" | gh secret set NEXT_PUBLIC_APP_LOGIN_URL
+printf '%s' "$NEXT_PUBLIC_API_URL" | gh secret set NEXT_PUBLIC_API_URL
+
+# Commit and push the pipeline. Pushing main starts deployment automatically.
+git add .github/workflows/deploy.yml docker-compose.yml README.md cicd/commands
+git commit -m "Add frontend CI/CD deployment"
+git push origin main
+
+# Useful monitoring commands after the push.
+gh run list --workflow deploy.yml --limit 5
+gh run watch --exit-status
+
+# To manually run the pipeline again later:
+# gh workflow run deploy.yml --ref main

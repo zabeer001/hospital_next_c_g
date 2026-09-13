@@ -132,4 +132,25 @@ Stop the container with:
 ```bash
 docker compose down
 ```
+
+## CI/CD
+
+Pushes to `main` run type-checking and linting, build the application artifact in
+GitHub Actions, and deploy it to the VPS. Deployment does not build a Docker
+image: the compiled `dist` directory is copied to the server and mounted into the
+existing `doctor-tracker-frontend:latest` image before the service is recreated
+with `docker compose up --no-build`.
+
+Configure these GitHub Actions repository secrets:
+
+- `VPS_ROOT_ACCESS` (for example, `ssh root@server.example.com`)
+- `VPS_PASSWORD`
+- `VPS_PROJECT_DIR`
+- `VPS_APP_CONTAINER`
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_APP_LOGIN_URL`
+
+The VPS must already contain the project checkout and the
+`doctor-tracker-frontend:latest` image. The workflow can also be started manually
+from the repository's **Actions** tab.
 # hospital_next_c_g

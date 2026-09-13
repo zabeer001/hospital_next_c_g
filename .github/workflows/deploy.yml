@@ -1,0 +1,134 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-frontend
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build application artifact
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_APP_LOGIN_URL: ${{ secrets.NEXT_PUBLIC_APP_LOGIN_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Package application artifact
+        run: tar -czf frontend-dist.tar.gz dist
+
+      - name: Install SSH password client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Upload artifact and deploy without building an image
+        env:
+          VPS_ROOT_ACCESS: ${{ secrets.VPS_ROOT_ACCESS }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
+          VPS_APP_CONTAINER: ${{ secrets.VPS_APP_CONTAINER }}
+        run: |
+          set -Eeuo pipefail
+
+          SSH_TARGET="${VPS_ROOT_ACCESS#ssh }"
+          REMOTE_ARCHIVE="/tmp/doctor-tracker-${GITHUB_SHA}.tar.gz"
+          export SSHPASS="$VPS_PASSWORD"
+
+          sshpass -e scp \
+            -o StrictHostKeyChecking=accept-new \
+            frontend-dist.tar.gz \
+            "${SSH_TARGET}:${REMOTE_ARCHIVE}"
+
+          sshpass -e ssh \
+            -o StrictHostKeyChecking=accept-new \
+            "$SSH_TARGET" \
+            bash -se -- \
+            "$VPS_PROJECT_DIR" \
+            "$VPS_APP_CONTAINER" \
+            "$REMOTE_ARCHIVE" <<'REMOTE_SCRIPT'
+          set -Eeuo pipefail
+
+          PROJECT_DIR="$1"
+          APP_CONTAINER="$2"
+          ARCHIVE="$3"
+          RELEASE_DIR="${PROJECT_DIR}/.deploy-next"
+          BACKUP_DIR="${PROJECT_DIR}/.deploy-previous"
+
+          cleanup() {
+            rm -f "$ARCHIVE"
+            rm -rf "$RELEASE_DIR"
+          }
+          trap cleanup EXIT
+
+          cd "$PROJECT_DIR"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          rm -rf "$RELEASE_DIR" "$BACKUP_DIR"
+          mkdir -p "$RELEASE_DIR"
+          tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
+          test -d "$RELEASE_DIR/dist"
+
+          if [ -d dist ]; then
+            mv dist "$BACKUP_DIR"
+          fi
+          mv "$RELEASE_DIR/dist" dist
+
+          if ! docker compose up -d --no-build --force-recreate doctor-tracker-web; then
+            rm -rf dist
+            if [ -d "$BACKUP_DIR" ]; then
+              mv "$BACKUP_DIR" dist
+              docker compose up -d --no-build --force-recreate doctor-tracker-web
+            fi
+            exit 1
+          fi
+
+          rm -rf "$BACKUP_DIR"
+
+          for attempt in $(seq 1 12); do
+            STATUS="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$APP_CONTAINER")"
+            if [ "$STATUS" = healthy ] || [ "$STATUS" = running ]; then
+              docker ps --filter "name=^/${APP_CONTAINER}$" --format 'deployed: {{.Names}} ({{.Status}})'
+              exit 0
+            fi
+            if [ "$STATUS" = unhealthy ] || [ "$STATUS" = exited ] || [ "$STATUS" = dead ]; then
+              docker logs --tail 100 "$APP_CONTAINER"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          docker logs --tail 100 "$APP_CONTAINER"
+          echo "Container did not become ready before the timeout" >&2
+          exit 1
+          REMOTE_SCRIPT

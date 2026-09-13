@@ -1,0 +1,10 @@
+LOCAL
+
+When frontend files change:
+
+./bash/git_bash.sh local "your commit message"
+
+
+PRODUCTION
+
+./bash/git_bash.sh production
