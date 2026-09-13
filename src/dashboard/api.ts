@@ -1,9 +1,7 @@
 import type { Doctor, DoctorInput, Patient, PatientInput, PatientStatus } from "./types";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
+import { authenticatedRequest } from "@/auth/client";
 
 export type PaginationMeta = { page: number; limit: number; total: number; totalPages: number };
-export type ApiErrorResponse = { error?: { message?: string; details?: Record<string, string[]> } };
 type Envelope<T> = { data: T };
 type ListEnvelope<T> = Envelope<T[]> & { meta: PaginationMeta };
 
@@ -31,17 +29,7 @@ type DashboardSummaryRecord = Omit<DashboardSummary, "busiestDoctors" | "recentP
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: init?.body ? { "Content-Type": "application/json", ...init.headers } : init?.headers,
-  });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-    const details = body.error?.details ? Object.values(body.error.details).flat().join(" ") : "";
-    throw new Error(details || body.error?.message || `Request failed (${response.status})`);
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  return authenticatedRequest<T>(path, init);
 }
 
 function mapDoctor(record: DoctorRecord): Doctor {

@@ -2,18 +2,30 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { authApi } from "@/auth/client";
 
 export function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
-    setMessage("Signing you in…");
-    window.setTimeout(() => router.push("/dashboard"), 450);
+    const data = new FormData(form);
+    setSubmitting(true);
+    setMessage("");
+    try {
+      await authApi.signIn(String(data.get("email")), String(data.get("password")), data.get("remember") === "on");
+      const requested = new URLSearchParams(window.location.search).get("next");
+      router.replace(requested?.startsWith("/dashboard") ? requested : "/dashboard");
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Sign in failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -33,9 +45,8 @@ export function SignInForm() {
         </div>
       </div>
       <label className="mt-5 flex cursor-pointer items-center gap-3 text-sm text-muted"><input type="checkbox" name="remember" className="size-4 accent-[#173b36]" /> Keep me signed in on this device</label>
-      {message && <p id="signin-message" role="status" className="mt-5 rounded-xl border border-sage bg-sage/25 px-4 py-3 text-sm leading-6 text-forest">{message}</p>}
-      <button type="submit" className="button button-coral mt-7 w-full justify-center">Sign in securely <span aria-hidden="true">→</span></button>
-      <p className="mt-5 text-center text-xs leading-5 text-muted">Frontend demonstration only—authentication is not connected yet.</p>
+      {message && <p id="signin-message" role="alert" className="mt-5 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm leading-6 text-forest">{message}</p>}
+      <button type="submit" disabled={submitting} className="button button-coral mt-7 w-full justify-center disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "Signing in…" : "Sign in securely"} <span aria-hidden="true">→</span></button>
     </form>
   );
 }

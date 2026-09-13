@@ -1,6 +1,6 @@
 # Doctor Tracker Public Website
 
-Doctor Tracker is a polished public-facing website for a healthcare operations product. It introduces the platform through a focused marketing page, publishes practical articles for care teams, and offers a clear route into the separately hosted application—all without bundling dashboard, authentication, backend, or database concerns into the marketing codebase.
+Doctor Tracker combines a public healthcare product site with an authenticated operations dashboard connected to the Hospital Express API.
 
 ## Setup guide
 
@@ -23,7 +23,7 @@ Doctor Tracker is a polished public-facing website for a healthcare operations p
    cp .env.example .env.local
    ```
 
-3. Update `NEXT_PUBLIC_APP_LOGIN_URL` with the separately hosted portal login URL. Set `NEXT_PUBLIC_SITE_URL` to the public marketing-site origin when deploying.
+3. Set `NEXT_PUBLIC_API_URL` to the Hospital Express API, keep `NEXT_PUBLIC_APP_LOGIN_URL=/signin` when the portal is hosted here, and set `NEXT_PUBLIC_SITE_URL` to the public site origin.
 
 4. Start the local site:
 
@@ -41,7 +41,7 @@ Doctor Tracker is a polished public-facing website for a healthcare operations p
 | `/blog` | Searchable, category-filtered journal |
 | `/blog/[slug]` | Statically generated local MDX article |
 | `/contact` | Contact details and UI-only demonstration form |
-| `/signin` | Frontend sign-in screen and local portal fallback |
+| `/signin` | Backend-connected portal sign-in |
 | `/dashboard` | Client-rendered analytics overview |
 | `/dashboard/doctors` | Searchable doctor directory and linked-patient management |
 | `/dashboard/patients` | Searchable and filterable patient management |
@@ -61,9 +61,9 @@ src/
 
 ## System architecture
 
-The App Router serves public pages as server-rendered or statically generated HTML. Landing and article content remains server-side by default for fast delivery and strong metadata. Small client components own only the state they need: mobile navigation, article filtering, and contact-form validation. Blog entries live in `content/blog` as MDX files, are parsed into a typed `BlogPostMetadata` collection, and generate article routes and metadata during the build. Sign-in links point directly to the external portal configured through the environment.
+The App Router serves public pages as server-rendered or statically generated HTML. Landing and article content remains server-side by default for fast delivery and strong metadata. Small client components own only the state they need: mobile navigation, article filtering, and contact-form validation. Blog entries live in `content/blog` as MDX files, are parsed into a typed `BlogPostMetadata` collection, and generate article routes and metadata during the build. Sign-in links use the portal location configured through the environment.
 
-The dashboard is a separate client-rendered demonstration surface. Its React context owns seeded doctor and patient records, derives analytics and filtered lists, and supports in-session CRUD interactions. Dashboard routes are intentionally open during this frontend-only phase; authentication will be added with the backend integration.
+The dashboard is a protected client-rendered surface backed by the Hospital Express API. Sign-in stores the issued tokens in session storage by default (or local storage when “Keep me signed in” is selected), bearer credentials are attached to protected requests, and expired access tokens are refreshed and rotated automatically. The authenticated profile supplies the displayed identity and permissions; sign-out revokes the backend session, while password changes revoke all of the user’s sessions.
 
 Dashboard controls and surfaces use DaisyUI 5. All built-in DaisyUI themes are enabled, the dashboard header exposes a theme selector, and the selected theme is remembered locally in the browser under `doctor-tracker-theme`. The public marketing pages retain their original Doctor Tracker visual identity.
 
@@ -71,7 +71,7 @@ Dashboard controls and surfaces use DaisyUI 5. All built-in DaisyUI themes are e
 Browser → Next.js public routes → Server-rendered marketing content
                               ↘ Local MDX → Typed metadata → Static blog pages
                               ↘ Client islands → Search / filters / demo form
-                              ↘ Sign in CTA → External Doctor Tracker portal
+                              ↘ Sign in → JWT session → Hospital Express API
 ```
 
 ## Technical decisions
