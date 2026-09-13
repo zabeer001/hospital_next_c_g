@@ -48,6 +48,19 @@ jobs:
           cd "$PROJECT_DIR"
           git fetch origin main
           git checkout main
+
+          # Allow the one-time VPS Dockerfile hotfix only when its resulting
+          # content is already identical to the incoming committed version.
+          if ! git diff --quiet -- Dockerfile; then
+            if git diff --quiet origin/main -- Dockerfile; then
+              git restore -- Dockerfile
+            else
+              echo "VPS Dockerfile has changes not present in origin/main" >&2
+              git diff -- Dockerfile >&2
+              exit 1
+            fi
+          fi
+
           git pull --ff-only origin main
 
           if [ ! -f .env ]; then
